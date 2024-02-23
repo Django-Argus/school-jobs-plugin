@@ -1,18 +1,20 @@
 package net.argus.school.plugin.jobs.handler;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.Map.Entry;
 
 import com.sun.net.httpserver.HttpExchange;
 
 import net.argus.cjson.CJSON;
 import net.argus.cjson.value.CJSONArray;
 import net.argus.school.api.Students;
-import net.argus.school.api.http.APIHandler;
-import net.argus.school.api.http.pack.PackagePrefab;
+import net.argus.school.api.handler.pack.SchoolPackagePrefab;
 import net.argus.school.plugin.jobs.Attribution;
 import net.argus.school.plugin.jobs.handler.pack.PackagePrefabJobs;
+import net.argus.web.http.pack.PackagePrefab;
 
-public class APIAttributionHandler extends APIHandler {
+public class APIAttributionHandler extends JobsAPIHandler {
 
 	public APIAttributionHandler() {
 		super("attribution");
@@ -26,6 +28,7 @@ public class APIAttributionHandler extends APIHandler {
 	@Override
 	public void doPost(HttpExchange exchange) throws IOException {
 		CJSON parameters = getCJSONParameters(exchange);
+		try {
 
 		switch(parameters.getString("action").toLowerCase()) {	
 			case "get":
@@ -44,7 +47,7 @@ public class APIAttributionHandler extends APIHandler {
 				int uid = parameters.getInt("user_id");
 				
 				if(Attribution.addStudent(id, uid))
-					send(exchange, PackagePrefab.getStudentPackage(Students.getStudent(uid).getString("name"), uid));		
+					send(exchange, SchoolPackagePrefab.getStudentPackage(Students.getStudent(uid).getString("name"), uid));		
 				else
 					send500(exchange);
 				
@@ -80,23 +83,6 @@ public class APIAttributionHandler extends APIHandler {
 				send(exchange, PackagePrefabJobs.getStudentAttributionPackage(arr));
 				break;
 				
-			case "random":
-				id = parameters.getInt("id");
-				cap = parameters.getInt("capability");
-				int mCap = Attribution.getCapability(id);
-				if(cap <= 0 || cap > mCap)
-					cap = mCap;
-				
-				int[] uids = Attribution.getRandomUIDForJob(id, cap);
-
-				if(uids == null) {
-					send500(exchange);
-					break;
-				}
-
-				send(exchange, PackagePrefabJobs.getRandomPackage(uids));
-				break;
-				
 			case "clear_attributions":
 				Attribution.clearAttributions();
 					
@@ -119,6 +105,21 @@ public class APIAttributionHandler extends APIHandler {
 					send500(exchange);
 				
 				break;
+				
+			case "randomize":
+				
+				List<Entry<Integer, Integer>> result = Attribution.genRandomAttribution();
+
+				if(result == null) {
+					sendEmptyPackage(exchange);
+					break;
+				}
+				
+				send(exchange, PackagePrefabJobs.getRandomizePackage(result));
+				break;
+		}
+		}catch (Exception e) {
+			e.printStackTrace();
 		}
 	}
 

@@ -5,13 +5,12 @@ import java.io.IOException;
 import com.sun.net.httpserver.HttpExchange;
 
 import net.argus.cjson.CJSON;
-import net.argus.school.api.http.APIHandler;
 import net.argus.school.plugin.jobs.Attribution;
 import net.argus.school.plugin.jobs.Job;
 import net.argus.school.plugin.jobs.Jobs;
 import net.argus.school.plugin.jobs.handler.pack.PackagePrefabJobs;
 
-public class APIJobsHandler extends APIHandler {
+public class APIJobsHandler extends JobsAPIHandler {
 
 	public APIJobsHandler() {
 		super("jobs");
@@ -32,6 +31,10 @@ public class APIJobsHandler extends APIHandler {
 				Job job = Jobs.getJob(id);
 				job.setCapability(Attribution.getCapability(id));
 				send(exchange, PackagePrefabJobs.getJobPackage(job));
+				break;
+				
+			case "random_list":
+				send(exchange, PackagePrefabJobs.getRandomJobsPackage());
 				break;
 				
 			case "add":

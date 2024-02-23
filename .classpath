@@ -5,5 +5,6 @@
 	<classpathentry kind="lib" path="/SchoolAPI/libs/Cardinal-Plugin.jar"/>
 	<classpathentry kind="lib" path="/SchoolAPI/libs/Cardinal-System.jar"/>
 	<classpathentry kind="lib" path="/SchoolAPI/bin"/>
+	<classpathentry kind="lib" path="/SchoolAPI/libs/Cardinal-Web.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

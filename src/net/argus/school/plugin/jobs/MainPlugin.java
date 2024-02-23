@@ -4,11 +4,11 @@ import net.argus.instance.Instance;
 import net.argus.plugin.Plugin;
 import net.argus.plugin.PluginEvent;
 import net.argus.plugin.annotation.PluginInfo;
-import net.argus.school.api.http.APIServer;
-import net.argus.school.api.http.FileHandler;
 import net.argus.school.plugin.jobs.handler.APIAttributionHandler;
 import net.argus.school.plugin.jobs.handler.APIJobsHandler;
 import net.argus.school.plugin.jobs.handler.APIUploadJobHandler;
+import net.argus.web.http.APIServer;
+import net.argus.web.http.FileHandler;
 
 @PluginInfo(authors = {MainPlugin.AUTHORS}, description = MainPlugin.DESCRIPTION, name = MainPlugin.NAME,
 pluginId = MainPlugin.PLUGIN_ID, pluginRequested = {MainPlugin.REQUESTED}, version = MainPlugin.VERSION)
@@ -19,7 +19,7 @@ public class MainPlugin extends Plugin {
 	public static final String NAME = "Jobs";
 	public static final String PLUGIN_ID = "jobs";
 	public static final String REQUESTED = "";
-	public static final String VERSION = "1.0.0";
+	public static final String VERSION = "1.1.0b";
 	
 	@Override
 	public void preInit(PluginEvent e) {

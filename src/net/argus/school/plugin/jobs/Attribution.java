@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Random;
 
 import net.argus.cjson.Array;
@@ -43,15 +44,51 @@ public class Attribution {
 		
 		return att;
 	}
+	
+	public static int[] getLogs(int id) throws IOException {
+		CJSONObject obj = Attribution.getObject(id);
+		if(obj == null)
+			return null;
+		
+		List<CJSONValue> attrs = obj.getArray("logs").getArray();
+		int[] att = new int[attrs.size()];
+		
+		for(int i = 0; i < attrs.size(); i++)
+			att[i] = attrs.get(i).getInt();
+		
+		return att;
+	}
 
 	public static void addJob(int id, int capability) throws IOException {
 		CJSONObject obj = new CJSONObject();
 		
 		obj.addItem("capability", new CJSONInteger(capability));
 		obj.addItem("attributions", new CJSONArray());
-		obj.addItem("logs", new CJSONArray());
 		getMainObject().addItem(Integer.toString(id), obj);
 		
+		writeFile();
+	}
+	
+	public static void logOffset(int offset) throws IOException {
+		if(getMainObject().getValue("logs") == null) {
+			List<CJSONValue> intgs = new ArrayList<CJSONValue>();
+			
+			intgs.add(new CJSONInteger(offset));
+			
+			CJSONArray obj = new CJSONArray(intgs);
+			getMainObject().addItem("logs", obj);
+		}else {
+			CJSONObject obj = getMainObject();
+			
+			Array arr = obj.getArray("logs");
+			arr.addValue(new CJSONInteger(offset));
+		}
+		writeFile();
+	}
+	
+	public static void clearOffset() throws IOException {
+		Array logs = getMainObject().getArray("logs");
+		logs.getArray().clear();
 		writeFile();
 	}
 	
@@ -69,23 +106,10 @@ public class Attribution {
 		if(isAlreadyUse(uid))
 			return false;
 		
-		if(isFull(id, uid))
-			clearLog(uid);
-		
 		CJSONObject obj = getMainObject().getObject(Integer.toString(id));
 		
 		Array arr = obj.getArray("attributions");
 		arr.addValue(new CJSONInteger(uid));
-		
-		Array logs = obj.getArray("logs");
-		int i = 0;
-		for(CJSONValue val : logs.getArray())
-			if(val.getInt() == uid)
-				i++;
-
-		
-		if(i < cap)
-			logs.addValue(new CJSONInteger(uid));
 		
 		writeFile();
 		return true;
@@ -110,6 +134,9 @@ public class Attribution {
 	public static void clearLog(int uid) throws IOException {
 		List<CJSONItem> jobs = getMainObject().getValue();
 		for(CJSONItem job : jobs) {
+			if(job.getName().equals("logs"))
+				continue;
+			
 			Array logs = job.getValue().getArray("logs");
 			for(int i = 0; i < logs.length(); i++)
 				if(logs.get(i).getInt() == uid)
@@ -121,6 +148,8 @@ public class Attribution {
 	public static void clearAll() throws IOException {
 		List<CJSONItem> jobs = getMainObject().getValue();
 		for(CJSONItem job : jobs) {
+			if(job.getName().equals("logs"))
+				continue;
 			Array logs = job.getValue().getArray("logs");
 			Array attributions = job.getValue().getArray("attributions");
 			
@@ -143,6 +172,8 @@ public class Attribution {
 	public static void clearAttributions() throws IOException {
 		List<CJSONItem> jobs = getMainObject().getValue();
 		for(CJSONItem job : jobs) {
+			if(job.getName().equals("logs"))
+				continue;
 			Array attributions = job.getValue().getArray("attributions");
 			
 			attributions.getArray().clear();
@@ -150,28 +181,6 @@ public class Attribution {
 		writeFile();
 	}
 	
-	public static boolean isFull(int exceptId, int uid) {
-		List<CJSONItem> jobs = getMainObject().getValue();
-
-		for(CJSONItem job : jobs) {
-			
-			int cap = getCapability(Integer.valueOf(job.getName()));
-			Array logs = job.getValue().getArray("logs");
-			
-			int i = 0;
-			for(CJSONValue val : logs.getArray())
-				if(val.getInt() == uid)
-					i++;
-			
-			if(job.getName().equals(Integer.toString(exceptId)))
-				i++;
-			
-			if(i < cap)
-				return false;
-					
-		}
-		return true;
-	}
 	
 	public static boolean isAleardyDo(int id, int uid) {
 		List<CJSONItem> jobs = getMainObject().getValue();
@@ -200,6 +209,8 @@ public class Attribution {
 	public static boolean isAlreadyUse(int uid) {
 		List<CJSONItem> jobs = getMainObject().getValue();
 		for(CJSONItem job : jobs) {
+			if(job.getName().equals("logs"))
+				continue;
 			
 			Array logs = job.getValue().getArray("attributions");
 			for(CJSONValue val : logs.getArray())
@@ -241,38 +252,6 @@ public class Attribution {
 		return new CJSONArray(vals);
 	}
 	
-	public static int[] getRandomUIDForJob(int id, int cap) throws IOException {
-		if(getObject(id) == null)
-			return null;
-
-		List<CJSONValue> val = Students.STUDENTS.getMainObject().getArray("students").getArray();
-		if(val.size() == 0)
-			return null;
-		
-		if(cap > val.size()  - countStudentAssigned())
-			cap = val.size() - countStudentAssigned();
-		
-		if(getAttributions(id).length >= cap)
-			cap = 0;
-
-		int rand = 0;
-		int[] uids = new int[cap];
-		for(int i = 0; i < cap; i++) {
-			int uid = 0;
-			do {
-				rand = new Random().nextInt(val.size());
-				uid = val.get(rand).getInt("id");
-				if(!isAlreadyUse(uid) && isAleardyDo(id, uid) && cap == 1) {
-					Debug.log("Student with id " + uid + " was exceptionally authorised");
-					break;
-				}
-			}while(isAlreadyUse(uid) || isAleardyDo(id, uid) || contentUid(uids, uid));
-			uids[i] = uid;
-		}
-		
-		return uids;
-	}
-	
 	public static int countStudentAssigned() {
 		List<CJSONItem> jobs = getMainObject().getValue();
 		int c = 0;
@@ -283,12 +262,154 @@ public class Attribution {
 		return c;
 	}
 	
-	private static boolean contentUid(int[] uids, int uid) {
-		for(int u : uids)
-			if(u == uid)
-				return true;
+	public static List<CJSONValue> getStudentAvaliableForJob(int id) {
+		List<CJSONValue> rets = new ArrayList<CJSONValue>();
 		
-		return false;
+		List<CJSONValue> black = new ArrayList<CJSONValue>();
+		
+		Array studs = Students.getStudentsArray().getArray();
+		
+		
+		for(int i = indexJob(id); i < ATTRIBUTION.getMainObject().getValue().size(); i++) {
+			CJSONItem val = ATTRIBUTION.getMainObject().getValue().get(i);
+			
+			CJSONObject obj = (CJSONObject) val.getValue();
+			Array logs = obj.getArray("logs");
+			int cap = getCapability(Integer.valueOf(val.getName()));
+			
+			if(Integer.valueOf(val.getName()) != id) {
+				if(logs.length() >= studs.length() * cap - cap) {
+					for(CJSONValue s : studs.getArray()) {
+						if(!isAleardyDo(Integer.valueOf(val.getName()), s.getInt("id"))) {
+							if(rets.contains(s))
+								rets.remove(s);
+							black.add(s);
+						}
+					}
+				}
+			}else {
+				for(CJSONValue s2 : studs.getArray()) {
+					if(!isAlreadyUse(s2.getInt("id")) && !isAleardyDo(Integer.valueOf(val.getName()), s2.getInt("id")) && !black.contains(s2))
+						rets.add(s2);
+				}
+			}
+		}
+		
+	
+		if(rets.size() < getCapability(id)) {
+			List<CJSONValue> last = new ArrayList<CJSONValue>();
+			for(CJSONValue v : studs.getArray())
+				if(!isAlreadyUse(v.getInt("id")))
+					last.add(v);
+			
+			int[] uids = new int[getCapability(id)];
+			int i = 0;
+			do {
+				int uid = 0;
+				int rand = new Random().nextInt(last.size());
+				if(!rets.contains(last.get(rand))) {
+					uids[i] = last.get(rand).getInt("id");
+					Debug.log("Student with id " + uid + " was exceptionally authorised");
+					i++;
+				}
+				last.remove(rand);
+				
+				
+				
+				
+			}while(uids.length != getCapability(id) || last.size() <= 0);
+			
+		}
+		
+		
+		System.out.println();
+		System.out.println(rets);
+		System.out.println(black);
+		
+		return rets;
+	}
+	
+	public static int getJobId(int index) {
+		Array jobs = Jobs.getJOBSArray().getArray();
+		int jIndex = 0;
+		for(int i = 0; i < index; jIndex++) {
+			CJSONObject attr = Attribution.getObject(jobs.get(jIndex).getInt("id"));
+			int cap = attr.getInt("capability");
+			if(i + cap <= index) {
+				i += cap;
+			}else 
+				return jobs.get(jIndex).getInt("id");
+		}
+		
+		return jobs.get(jIndex).getInt("id");
+	}
+	
+	public static int getSizeJob() {
+		CJSONObject attr = getMainObject();
+		
+		Array jobs = Jobs.getJOBSArray().getArray();
+
+		int size = 0;
+		for(int i = 0; i < jobs.length(); i++) {
+			size += attr.getObject(Integer.toString(jobs.get(i).getInt("id"))).getInt("capability");
+		}
+		
+		return size;
+	}
+	
+	public static List<Entry<Integer, Integer>> genRandomAttribution() throws IOException {
+		List<Entry<Integer, Integer>> list = new ArrayList<Entry<Integer,Integer>>();
+		
+		Array studs = Students.getStudentsArray().getArray();
+		int sizeJob = getSizeJob();
+		
+		if(studs.length() != sizeJob)
+			return null;
+		
+		int offset = genOffset(studs.length());
+		for(int i = 0; i < studs.length(); i++) {
+			AttributionEntry<Integer, Integer> ent = new AttributionEntry<Integer, Integer>();
+			ent.setKey(getJobId((i + offset) % sizeJob));
+			ent.setValue(studs.get(i).getInt("id"));
+			list.add(ent);
+		}
+		
+		logOffset(offset);
+
+		return list;
+	}
+	
+	public static int genOffset(int max) throws IOException {
+		if(getMainObject().getValue("logs") == null)
+			return new Random().nextInt(max);
+		
+		Array arr = getMainObject().getArray("logs");
+		
+		if(arr.length() == max) {
+			clearOffset();
+			return new Random().nextInt(max);
+		}
+		
+		List<Integer> possible = new ArrayList<Integer>();
+		
+main:	for(int i = 0; i < max; i++) {
+			for(int j = 0; j < arr.length(); j++) 
+				if(arr.get(j).getInt() == i) 
+					continue main;
+			possible.add(i);
+		}
+		int offset = possible.get(new Random().nextInt(possible.size()));
+		
+		
+		return offset;
+	}
+	
+	public static int indexJob(int id) {
+		List<CJSONItem> it = getMainObject().getValue();
+		for(int i = 0; i < it.size(); i ++)
+			if(Integer.valueOf(it.get(i).getName()) == id)
+				return i;
+		return -1;
 	}
 	
 	public static CJSONObject getObject(int id) {
