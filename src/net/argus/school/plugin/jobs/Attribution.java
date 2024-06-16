@@ -95,6 +95,12 @@ public class Attribution {
 	public static boolean addStudent(int id, int uid) throws IOException {
 		int[] att = getAttributions(id);
 		
+		for(int uuid : att)
+			if(Students.getStudent(uuid) == null)
+				removeStudent(id, uuid);
+		
+		att = getAttributions(id);
+
 		int cap = getCapability(id);
 		if(att.length >= cap)
 			return false;
@@ -148,12 +154,13 @@ public class Attribution {
 	public static void clearAll() throws IOException {
 		List<CJSONItem> jobs = getMainObject().getValue();
 		for(CJSONItem job : jobs) {
-			if(job.getName().equals("logs"))
+			if(job.getName().equals("logs")) {
+				job.getValue().getArray().getArray().clear();
+				System.out.println(job);
 				continue;
-			Array logs = job.getValue().getArray("logs");
+			}
 			Array attributions = job.getValue().getArray("attributions");
 			
-			logs.getArray().clear();
 			attributions.getArray().clear();
 		}
 		writeFile();

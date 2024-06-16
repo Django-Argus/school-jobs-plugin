@@ -74,7 +74,7 @@ public class Jobs {
 		return false;
 	}
 	
-	public synchronized static boolean removeMaterial(int id) throws IOException {
+	public synchronized static boolean removeJob(int id) throws IOException {
 		Array array = JOBS.getArray("jobs");
 		for(CJSONValue val : array.getArray()) {
 			CJSONObject obj = (CJSONObject) val;

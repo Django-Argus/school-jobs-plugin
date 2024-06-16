@@ -54,7 +54,7 @@ public class APIJobsHandler extends JobsAPIHandler {
 				
 			case "remove":
 				id = parameters.getInt("id");
-				if(Jobs.removeMaterial(id))
+				if(Jobs.removeJob(id))
 					if(Attribution.removeJob(id)) {
 						sendEmptyPackage(exchange);
 						break;
